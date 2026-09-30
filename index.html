@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BITS Pilani Digital — Advanced Grading Console v2.0</title>
+
+<!-- Modern Academic Typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- SheetJS for High-Performance Spreadsheet Processing (Pinned Stable Version) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" onerror="handleSheetJSLoadError()"></script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<div class="container">
+
+  <!-- TOP HEADER WITH OFFICIAL SVG LOGO -->
+  <header class="header-bar">
+    <div class="brand-wrapper">
+      <div class="logo-container">
+        <img src="logo.svg" alt="BITS Pilani Digital Logo">
+      </div>
+      <div class="brand-divider"></div>
+      <div class="brand-titles">
+        <h1>BITS Pilani Digital <span class="badge-version">CodeForge v2.0 Pro</span></h1>
+        <p>Enterprise Academic Grading Console & Cutoff Optimization Engine</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btnResetSession" title="Clear all data and start a fresh session">↺ Reset Session</button>
+      <button class="btn-icon" id="themeToggle" title="Toggle Light/Dark Theme">🌙 Theme</button>
+      <button class="btn-icon" id="btnReport" title="Print Official Senate Audit Report">🖨️ Audit Report</button>
+    </div>
+  </header>
+ 
+  <!-- SHEETJS CDN FAILURE WARNING BANNER -->
+  <div class="cdn-error-banner" id="cdnErrorBanner" role="alert">
+    <div class="cdn-error-content">
+      <span class="cdn-error-icon">⚠️</span>
+      <div class="cdn-error-text">
+        <strong>Spreadsheet Engine Offline (SheetJS CDN Failed to Load)</strong>
+        <p>The external library required to read and write Excel (.xlsx/.xls) files could not be loaded. This may be due to an active ad-blocker, firewall, or offline network. Demo data and CSV export remain functional, but Excel file ingestion and XLSX export are temporarily disabled.</p>
+      </div>
+    </div>
+    <button type="button" class="btn-retry-cdn" onclick="location.reload()">Retry Connection</button>
+  </div>
+
+  <!-- AUTOSAVE RESTORE BANNER (PHASE 3) -->
+  <div class="restore-banner" id="restoreBanner" role="alert">
+    <div class="restore-content">
+      <span class="restore-icon">💾</span>
+      <div class="restore-text">
+        <strong id="restoreTitle">Autosaved Session Available</strong>
+        <p id="restoreSubtitle">A saved grading configuration was found in your browser from a previous session.</p>
+      </div>
+    </div>
+    <div class="restore-actions">
+      <button type="button" class="btn-restore-confirm" id="btnRestoreSession">Restore Session</button>
+      <button type="button" class="btn-restore-dismiss" id="btnDismissRestore">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- CONTROLS & SESSION CREATION -->
+  <section class="session-card">
+    <div class="controls-layout">
+      <!-- ROW 1: INSTRUCTOR NAME & FILE INGESTION MODULE -->
+      <div class="controls-row-top">
+        <div class="field-group">
+          <label for="instructorName">
+            <span>Instructor Name *</span>
+            <span id="nameError" style="color:var(--bits-crimson); font-size:11px; display:none;">Name is required</span>
+          </label>
+          <input type="text" id="instructorName" class="field-input" placeholder="e.g. Prof. Arvind Raman" value="Prof. Arvind Raman">
+        </div>
+
+        <div class="file-ingest-container">
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">
+            Student Marks Spreadsheet (.xlsx / .xls)
+          </label>
+          
+          <!-- FILE DROPZONE -->
+          <div class="file-dropzone-box" id="dropZone">
+            <div class="dropzone-label">
+              <span>📁</span>
+              <span id="dropzoneText">Drop Excel file here or click to browse</span>
+            </div>
+            <span class="btn-browse">Browse File</span>
+            <input type="file" id="marksFile" accept=".xlsx, .xls">
+          </div>
+
+          <!-- SELECTED FILE BADGE -->
+          <div class="selected-file-chip" id="selectedFileChip">
+            <div class="file-details">
+              <span>📊</span>
+              <span id="chipFileName">marks.xlsx</span>
+              <span style="font-size:11px; color:var(--text-muted);" id="chipFileSize">(0 KB)</span>
+            </div>
+            <button class="btn-clear-file" id="btnClearFile" title="Remove selected file">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: ACTION BUTTONS, TARGET COURSE & STATUS -->
+      <div class="controls-row-bottom">
+        <div class="field-group">
+          <label for="courseSelect">
+            <span>Target Course *</span>
+            <span id="courseCountTag" style="font-size:11px; color:var(--bits-purple); font-weight:700;">No file loaded</span>
+          </label>
+          <select id="courseSelect" class="field-select" disabled>
+            <option value="">Select or upload a course to begin</option>
+          </select>
+        </div>
+
+        <!-- DEDICATED UPLOAD BUTTON AND DEMO BUTTON -->
+        <div class="button-row">
+          <button class="btn-upload-action" id="btnUploadFile" disabled title="Upload and process the chosen file">
+            📤 Upload & Process File
+          </button>
+          <button class="btn-demo-outline" id="btnLoadDemo" title="Load sample dataset with 180 students">
+            ✨ Or Try BITS Demo Data
+          </button>
+        </div>
+
+        <!-- FILE STATUS NOTIFIER -->
+        <div class="file-status-banner" id="fileStatusBanner">
+          <span>✅</span>
+          <span id="fileStatusText">Ready</span>
+        </div>
+
+        <!-- STUDENT DATA PRIVACY CONSENT (PHASE 3) -->
+        <div style="margin-top: 10px; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="chkPersistStudentData" style="accent-color: var(--bits-purple); cursor: pointer;">
+          <label for="chkPersistStudentData" style="font-size: 11.5px; color: var(--text-muted); cursor: pointer;">
+            Allow saving student marks in browser local storage (Privacy protection: left unchecked by default)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMAT GUIDANCE ACCORDION -->
+    <details class="guidance-box">
+      <summary>
+        <span>📘 Marks file specification & institutional grading regulations</span>
+        <span>Click to expand</span>
+      </summary>
+      <div class="guidance-content">
+        <div>
+          <strong>Required Columns:</strong>
+          <ul>
+            <li><code>BITS ID</code>: Student enrollment ID (e.g. 2024A7PS0012P)</li>
+            <li><code>Course</code>: Course code and title</li>
+            <li><code>Total Marks</code>: 0–100 numerical score (supports decimals)</li>
+          </ul>
+        </div>
+        <div>
+          <strong>Academic Regulations:</strong>
+          <ul>
+            <li>Exclusions: Students awarded <code>NC</code> (Non-Credit) who did not appear for exam.</li>
+            <li>Continuity: Grade G band is defined strictly as <code>[Cutoff(G), Cutoff(G_above))</code>.</li>
+            <li>Gaps or overlaps between bands are mathematically impossible.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- WEIGHTED COMPONENTS MODULE (PHASE 3) -->
+  <section class="weighted-card" id="weightedCard">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h3 style="font-size:15px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+          <span>⚖️</span> Weighted Component Marks Calculator
+        </h3>
+        <p style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">
+          Multiple assessment component columns detected in this file. Adjust weights to compute official <code>Total Marks</code>.
+        </p>
+      </div>
+      <span id="weightSumBadge" class="badge-version" style="font-size:12px; font-weight:700;">Total Weight: 100%</span>
+    </div>
+    <div class="weighted-grid" id="weightedColumnsContainer"></div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+      <button type="button" class="btn-secondary" id="btnResetWeights" style="padding:6px 14px; font-size:12px;">Reset Equal</button>
+      <button type="button" class="btn-primary" id="btnApplyWeightedMarks" style="padding:6px 16px; font-size:12px;">⚡ Compute Total Marks</button>
+    </div>
+  </section>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="workspace-grid">
+    
+    <!-- LEFT PANEL: ANALYTICS & DISTRIBUTION -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">📊 Marks Analytics & Distribution</h2>
+        <span id="studentCountBadge" class="badge-version">0 Enrolled</span>
+      </div>
+
+      <!-- INTERACTIVE HISTOGRAM CANVAS -->
+      <div class="chart-container" id="chartWrapper">
+        <canvas id="histCanvas" width="432" height="250" tabindex="0" role="img" aria-label="Interactive score distribution histogram with draggable grade cutoff markers" title="Draggable cutoff markers: Click and drag vertical cutoff handles to adjust cutoffs live"></canvas>
+        <div class="chart-tooltip" id="chartTooltip"></div>
+      </div>
+
+      <!-- ACCESSIBLE TEXT-TABLE ALTERNATIVE FOR HISTOGRAM (PHASE 4) -->
+      <div class="hist-accessible-wrapper">
+        <button type="button" class="btn-icon" id="btnToggleHistTable" aria-expanded="false" aria-controls="histAccessibleTableContainer" style="font-size:11.5px; padding:5px 12px; margin-top:8px;" aria-label="Toggle accessible tabular view of the histogram">
+          <span>👁️</span> <span id="toggleHistTableText">View Histogram as Accessible Data Table</span>
+        </button>
+        <div id="histAccessibleTableContainer" style="display:none; margin-top:10px;">
+          <table class="hist-table" id="histAccessibleTable" aria-label="Tabular frequency distribution of student marks">
+            <thead>
+              <tr>
+                <th scope="col">Score Bin Range</th>
+                <th scope="col">Student Count</th>
+                <th scope="col">Cohort Share (%)</th>
+                <th scope="col">Overlapping Grades</th>
+              </tr>
+            </thead>
+            <tbody id="histAccessibleTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DISTRIBUTION GUARDRAILS NOTIFICATION (PHASE 3) -->
+      <div class="guardrail-card ok" id="guardrailCard" role="region" aria-label="Configurable distribution guardrails (default thresholds are illustrative)">
+        <div class="guardrail-text">
+          <span id="guardrailIcon">✅</span>
+          <span id="guardrailMsg">Distribution complies with configurable distribution guardrails (default thresholds are illustrative)</span>
+        </div>
+        <button type="button" class="btn-guardrail-config" id="btnConfigureGuardrails" title="Configure distribution guardrails">⚙️ Guardrails</button>
+      </div>
+
+      <!-- KPI METRIC TILES -->
+      <div class="metrics-row">
+        <div class="metric-tile">
+          <div class="metric-label">Min Mark</div>
+          <div class="metric-value" id="kpiMin">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Max Mark</div>
+          <div class="metric-value" id="kpiMax">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Mean (μ)</div>
+          <div class="metric-value" id="kpiAvg">-</div>
+        </div>
+        <div class="metric-tile">
+          <div class="metric-label">Median</div>
+          <div class="metric-value" id="kpiMed">-</div>
+        </div>
+      </div>
+
+      <!-- GRADE DISTRIBUTION PILLS -->
+      <div style="margin-top:16px;">
+        <span class="preset-label">Grade Band Count (Click pill to filter roster):</span>
+        <div class="grade-summary-strip" id="gradePillsContainer"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: GRADE CONFIGURATION & ACTIONS -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">⚙️ Grade Threshold Optimization</h2>
+        <div class="history-controls">
+          <button type="button" class="btn-history" id="btnUndo" disabled title="Undo last cutoff change (Ctrl+Z)">↩ Undo</button>
+          <button type="button" class="btn-history" id="btnRedo" disabled title="Redo cutoff change (Ctrl+Y)">↪ Redo</button>
+          <button class="btn-icon" id="btnResetRanges" style="font-size:12px;">↺ Reset Defaults</button>
+        </div>
+      </div>
+
+      <!-- PRESET CURVING STRATEGIES -->
+      <div class="preset-section">
+        <span class="preset-label">Apply Curving Strategy Preset:</span>
+        <div class="preset-buttons">
+          <button class="btn-preset active" data-preset="default">BITS Standard (Absolute)</button>
+          <button class="btn-preset" data-preset="gaussian">Normal Bell Curve (μ ± σ)</button>
+          <button class="btn-preset" data-preset="percentile">Top-Decile Percentile</button>
+        </div>
+      </div>
+
+      <!-- GRADE INPUT GRID -->
+      <div class="grade-grid" id="gradeGrid"></div>
+
+      <!-- ERROR ALERT -->
+      <div class="alert-error" id="rangeAlert">
+        <span>⚠️</span>
+        <span id="rangeAlertText">Error in grade ranges</span>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="action-cluster">
+        <button class="btn-secondary" id="btnResetRangesBottom" title="Reset all grade bands to default BITS criteria">
+          ↺ Reset Range
+        </button>
+        <button class="btn-primary" id="btnExportCSV" disabled>
+          📥 Finalize & Export CSV
+        </button>
+        <button class="btn-secondary" id="btnExportXLSX" disabled>
+          📊 Export Multi-Sheet Excel
+        </button>
+      </div>
+
+      <!-- SCENARIO COMPARISON (PHASE 3) -->
+      <div class="scenario-panel">
+        <div class="scenario-header">
+          <h3 style="font-size:13.5px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:6px;">
+            <span>📑</span> Scenario Comparison (Up to 3)
+          </h3>
+          <button type="button" class="btn-secondary" id="btnSaveScenario" style="padding:4px 9px; font-size:11px;" title="Save current cutoffs as a named scenario">
+            💾 Save Current Scenario
+          </button>
+        </div>
+        <div id="scenarioTableContainer" style="overflow-x:auto;">
+          <table class="scenario-table" id="scenarioTable">
+            <thead>
+              <tr id="scenarioHeaderRow">
+                <th>Grade</th>
+                <th>Active Cutoff</th>
+                <th id="thScen0">Scenario 1</th>
+                <th id="thScen1">Scenario 2</th>
+                <th id="thScen2">Scenario 3</th>
+              </tr>
+            </thead>
+            <tbody id="scenarioTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- AUDIT CHANGE LOG (PHASE 3) -->
+      <details class="changelog-box" id="changelogDetails">
+        <summary>
+          <span>📋 Audit Change Log (<span id="changelogCount">0</span> modifications)</span>
+          <span style="font-size:11px; color:var(--bits-purple);">Included in Exports</span>
+        </summary>
+        <div style="max-height: 200px; overflow-y:auto;">
+          <table class="changelog-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Grade</th>
+                <th>Old Cutoff</th>
+                <th>New Cutoff</th>
+                <th>Delta</th>
+              </tr>
+            </thead>
+            <tbody id="changelogTableBody">
+              <tr><td colspan="5" class="changelog-empty">No cutoff adjustments recorded in this session.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- TIMER DISPLAY -->
+      <div class="timer-container" style="margin-top:16px;">
+        <div class="clock-circle">
+          <svg width="64" height="64">
+            <circle cx="32" cy="32" r="28" stroke="var(--border)" stroke-width="5" fill="none"/>
+            <circle id="timerArc" cx="32" cy="32" r="28"
+              stroke="var(--bits-purple)" stroke-width="5" fill="none"
+              stroke-linecap="round"
+              stroke-dasharray="176"
+              stroke-dashoffset="176"/>
+          </svg>
+          <div class="clock-text" id="timerClock">00:00</div>
+        </div>
+        <div class="timer-info">
+          <span>Active Grading Duration</span>
+          <span id="timerStatusNotice">Session idle — Select course to begin</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- STUDENT ROSTER & BORDERLINE DETECTION -->
+  <section class="roster-section" id="rosterSection" role="region" aria-label="Student performance roster and borderline cases">
+    <div class="roster-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h2 class="card-title">👥 Student Performance Roster</h2>
+        <div class="badge-borderline-pill" id="borderlineCountChip">
+          <span>⚡</span>
+          <span id="borderlineCountText">0 Borderline Cases (within 2 marks)</span>
+        </div>
+      </div>
+      <div class="roster-search">
+        <input type="text" id="studentSearch" class="search-input" placeholder="Search BITS ID..." aria-label="Search students by BITS Student ID">
+        <button class="btn-icon" id="btnFilterBorderline" aria-label="Filter roster to show only borderline students">Only Borderline</button>
+      </div>
+    </div>
+
+    <div class="roster-table-wrapper">
+      <table class="roster-table" id="rosterTable" aria-label="Student grade roster table">
+        <thead>
+          <tr>
+            <th scope="col" data-sort="index" tabindex="0" role="button" aria-sort="ascending" aria-label="Sort by index number"># ↕</th>
+            <th scope="col" data-sort="id" tabindex="0" role="button" aria-sort="none" aria-label="Sort by BITS Student ID">BITS Student ID ↕</th>
+            <th scope="col" data-sort="marks" tabindex="0" role="button" aria-sort="none" aria-label="Sort by Total Marks">Total Marks (100) ↕</th>
+            <th scope="col" data-sort="grade" tabindex="0" role="button" aria-sort="none" aria-label="Sort by Awarded Grade">Awarded Grade ↕</th>
+            <th scope="col">Status / Proximity to Higher Grade</th>
+          </tr>
+        </thead>
+        <tbody id="rosterBody">
+          <tr>
+            <td colspan="5" style="text-align:center; color:var(--text-muted); padding:24px;">
+              Please load marks and select a course to view student performance records.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ROSTER PAGINATION BAR (PHASE 4: 2000+ STUDENTS PERFORMANCE) -->
+    <div class="roster-pagination" id="rosterPagination" aria-label="Student roster pagination controls">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="paginationInfo" aria-live="polite">Showing 0 – 0 of 0 students</span>
+        <label for="pageSizeSelect" style="margin-left:14px; font-size:12px; font-weight:600; color:var(--text-muted);">Rows per page:</label>
+        <select id="pageSizeSelect" class="page-size-select" aria-label="Students displayed per page">
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="250">250</option>
+          <option value="500">500</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div class="pagination-controls">
+        <button type="button" class="btn-page" id="btnPageFirst" title="First page" aria-label="First page">⏮</button>
+        <button type="button" class="btn-page" id="btnPagePrev" title="Previous page" aria-label="Previous page">◀</button>
+        <span class="page-info" id="currentPageDisplay" aria-live="polite">Page 1 of 1</span>
+        <button type="button" class="btn-page" id="btnPageNext" title="Next page" aria-label="Next page">▶</button>
+        <button type="button" class="btn-page" id="btnPageLast" title="Last page" aria-label="Last page">⏭</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================================
+       PHASE 4: DEDICATED SENATE AUDIT REPORT PRINT VIEW
+       Institutional document rendered on print for Senate review & sign-off
+       ========================================================================== -->
+  <section id="senateAuditPrintSection" class="senate-print-only" aria-label="Official Senate Course Grading Audit Report">
+    <div class="senate-print-header">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <img src="logo.svg" alt="BITS Pilani Logo" style="height:56px; width:auto;">
+          <div>
+            <h1 style="font-size:18px; font-weight:800; color:#2B296D; margin:0; letter-spacing:-0.2px;">BIRLA INSTITUTE OF TECHNOLOGY & SCIENCE, PILANI</h1>
+            <p style="font-size:11px; font-weight:700; color:#8A00FF; margin:2px 0 0 0; text-transform:uppercase; letter-spacing:0.5px;">Senate Academic Council — Course Grading & Cutoff Audit Report</p>
+          </div>
+        </div>
+        <div style="text-align:right; font-size:10px; color:#475569; line-height:1.4;">
+          <div><strong>Academic Session:</strong> 2026–2027</div>
+          <div id="printReportTimestamp">Generated: -</div>
+          <div><strong>Evaluation Status:</strong> FINAL CERTIFIED</div>
+        </div>
+      </div>
+      <div class="senate-meta-grid">
+        <div><strong>Course Code & Title:</strong> <span id="printCourseName">-</span></div>
+        <div><strong>Instructor-in-Charge:</strong> <span id="printInstructorName">-</span></div>
+        <div><strong>Total Enrolled Cohort:</strong> <span id="printTotalStudents">-</span></div>
+        <div><strong>Grade Curving Strategy:</strong> <span id="printPresetName">BITS Standard / Optimized Cutoffs</span></div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: CUTOFF THRESHOLDS & DISTRIBUTION TABLE -->
+    <div class="senate-section">
+      <h3 class="senate-section-title">1. Approved Grade Cutoffs & Distribution Summary</h3>
+      <table class="senate-table" id="printCutoffTable">
+        <thead>
+          <tr>
+            <th>Grade Band</th>
+            <th>Approved Range [Min, Max)</th>
+            <th>Grade Points</th>
+            <th>Student Count</th>
+            <th>Class Share (%)</th>
+            <th>Academic Standing</th>
+          </tr>
+        </thead>
+        <tbody id="printCutoffTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 2: STATISTICAL EVALUATION METRICS -->
+    <div class="senate-section">
+      <h3 class="senate-section-title">2. Cohort Statistical Evaluation Metrics</h3>
+      <table class="senate-table" id="printStatsTable">
+        <thead>
+          <tr>
+            <th>Evaluated Cohort</th>
+            <th>Lowest Score</th>
+            <th>Highest Score</th>
+            <th>Mean Score (μ)</th>
+            <th>Median Score</th>
+            <th>Std. Dev (σ)</th>
+          </tr>
+        </thead>
+        <tbody id="printStatsTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 3: GRAPHICAL DISTRIBUTION SNAPSHOT -->
+    <div class="senate-section" id="printChartSection">
+      <h3 class="senate-section-title">3. Graphical Grade Distribution Snapshot</h3>
+      <div style="text-align:center; padding:6px 0;">
+        <img id="printChartImg" alt="Official Grade Distribution Histogram Snapshot" style="max-width:100%; height:auto; max-height:220px; border:1px solid #CBD5E1; border-radius:4px;">
+      </div>
+    </div>
+
+    <!-- SECTION 4: BORDERLINE CASES AUDIT -->
+    <div class="senate-section" id="printBorderlineSection">
+      <h3 class="senate-section-title">4. Borderline Student Audit (Within 2.0 Marks of Higher Grade)</h3>
+      <table class="senate-table" id="printBorderlineTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>BITS Student ID</th>
+            <th>Total Score</th>
+            <th>Awarded Grade</th>
+            <th>Proximity to Higher Grade</th>
+          </tr>
+        </thead>
+        <tbody id="printBorderlineTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 5: AUDIT CHANGE LOG -->
+    <div class="senate-section" id="printChangeLogSection">
+      <h3 class="senate-section-title">5. Cutoff Adjustment Audit Trail</h3>
+      <table class="senate-table" id="printChangeLogTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Grade</th>
+            <th>Previous Cutoff</th>
+            <th>Approved Cutoff</th>
+            <th>Net Delta</th>
+          </tr>
+        </thead>
+        <tbody id="printChangeLogTableBody">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 6: INSTITUTIONAL SIGN-OFF & CERTIFICATION -->
+    <div class="senate-section senate-signatures-block">
+      <h3 class="senate-section-title">6. Official Institutional Sign-Off & Verification</h3>
+      <p style="font-size:10px; color:#475569; margin-bottom:14px;">
+        By signing below, the undersigned confirm that the above grading thresholds and distributions comply with the Academic Regulations of BITS Pilani and have been reconciled against configurable distribution guardrails (default thresholds are illustrative).
+      </p>
+      <div class="senate-signatures-grid">
+        <div class="signature-box">
+          <div class="sig-line"></div>
+          <div class="sig-title">Instructor-in-Charge / Evaluator</div>
+          <div class="sig-meta" id="sigInstructorName">Name: Prof. Arvind Raman</div>
+          <div class="sig-meta">Date: ________________________</div>
+        </div>
+        <div class="signature-box">
+          <div class="sig-line"></div>
+          <div class="sig-title">Head of Department (HoD)</div>
+          <div class="sig-meta">Department: Computer Science & Digital</div>
+          <div class="sig-meta">Date: ________________________</div>
+        </div>
+        <div class="signature-box">
+          <div class="sig-line"></div>
+          <div class="sig-title">Associate Dean / Senate Convener</div>
+          <div class="sig-meta">Academic Regulations & Evaluation</div>
+          <div class="sig-meta">Date: ________________________</div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:20px; padding-top:10px; border-top:1px dashed #CBD5E1; font-size:8.5pt; color:#64748B;">
+        Prototype built for the BITS Digital CodeForge challenge. Not an official BITS Pilani grading tool.
+      </div>
+    </div>
+  </section>
+
+  <!-- PROTOTYPE NOTICE FOOTER -->
+  <footer class="prototype-notice-footer" style="text-align:center; padding:24px 0 16px; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border); margin-top:32px;">
+    <p>Prototype built for the BITS Digital CodeForge challenge. Not an official BITS Pilani grading tool.</p>
+  </footer>
+
+</div>
+
+<!-- SPREADSHEET VALIDATION REPORT MODAL -->
+<div class="modal-backdrop" id="validationModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 style="font-size:16px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+        <span>🛡️</span> Spreadsheet Data Validation Report
+      </h3>
+      <button class="btn-clear-file" id="btnDismissModal" title="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="validationSummaryStats" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:16px;">
+        <div class="stat-pill">
+          <strong id="valTotalRows">0</strong>
+          <span>Total Rows</span>
+        </div>
+        <div class="stat-pill" style="border-color:#BBF7D0;">
+          <strong id="valValidRows" style="color:#15803D;">0</strong>
+          <span>Valid Records</span>
+        </div>
+        <div class="stat-pill" style="border-color:#FECACA;">
+          <strong id="valFlaggedRows" style="color:var(--bits-crimson);">0</strong>
+          <span>Issues Found</span>
+        </div>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">
+        The following rows in your spreadsheet contain validation issues (duplicate BITS IDs within a course, non-numeric or out-of-range marks, or blank fields):
+      </p>
+      <div style="max-height:260px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;">
+        <table class="roster-table" id="validationTable">
+          <thead>
+            <tr>
+              <th>Row #</th>
+              <th>BITS ID</th>
+              <th>Course</th>
+              <th>Mark Value</th>
+              <th>Issue Description</th>
+            </tr>
+          </thead>
+          <tbody id="validationTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="btnCancelUploadModal">Cancel & Upload New File</button>
+      <button class="btn-primary" id="btnProceedCleanRows">
+        Exclude Invalid Rows & Proceed
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- GUARDRAIL CONFIGURATION MODAL (PHASE 3) -->
+<div class="modal-backdrop" id="guardrailModal" role="dialog" aria-modal="true" aria-labelledby="guardrailModalTitle">
+  <div class="modal-box" style="max-width: 460px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="guardrailModalTitle">⚙️ Configure Distribution Guardrails</h3>
+      <button type="button" class="btn-icon" id="btnCloseGuardrailModal" title="Close modal">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:14px; padding:18px 24px;">
+      <p style="font-size:12.5px; color:var(--text-muted); line-height:1.4;">
+        Configurable distribution guardrails monitor disproportionate distributions (default thresholds are illustrative).
+      </p>
+      <div class="field-group">
+        <label for="guardrailMaxAPct" style="font-size:12px; font-weight:700; color:var(--text-main);">
+          Max 'A' Grade Percentage ceiling (%):
+        </label>
+        <input type="number" class="field-input" id="guardrailMaxAPct" value="15" min="1" max="100" step="1">
+      </div>
+      <div class="field-group">
+        <label for="guardrailMaxEPct" style="font-size:12px; font-weight:700; color:var(--text-main);">
+          Max Fail Grade ('E') Percentage ceiling (%):
+        </label>
+        <input type="number" class="field-input" id="guardrailMaxEPct" value="20" min="1" max="100" step="1">
+      </div>
+      <div class="field-group">
+        <label for="guardrailMinMidPct" style="font-size:12px; font-weight:700; color:var(--text-main);">
+          Min Middle Grades ('B' + 'B-' + 'C') recommendation (%):
+        </label>
+        <input type="number" class="field-input" id="guardrailMinMidPct" value="35" min="1" max="100" step="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="btnResetGuardrails">Reset BITS Defaults</button>
+      <button type="button" class="btn-primary" id="btnSaveGuardrails">Apply Guardrails</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO SAVE MODAL (PHASE 3) -->
+<div class="modal-backdrop" id="scenarioModal" role="dialog" aria-modal="true" aria-labelledby="scenarioModalTitle">
+  <div class="modal-box" style="max-width: 420px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="scenarioModalTitle">💾 Save Cutoff Scenario</h3>
+      <button type="button" class="btn-icon" id="btnCloseScenarioModal" title="Close modal">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex; flex-direction:column; gap:12px; padding:18px 24px;">
+      <p style="font-size:12.5px; color:var(--text-muted);">
+        Enter a descriptive label for this cutoff set (e.g. <em>Senate Proposal</em>, <em>Curved Relative</em>, <em>Strict Criteria</em>).
+      </p>
+      <div class="field-group">
+        <label for="scenarioNameInput" style="font-size:12px; font-weight:700; color:var(--text-main);">Scenario Name:</label>
+        <input type="text" class="field-input" id="scenarioNameInput" value="Scenario 1" maxlength="30" placeholder="e.g. Scenario A">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="btnCancelScenarioModal">Cancel</button>
+      <button type="button" class="btn-primary" id="btnConfirmSaveScenario">Save Scenario</button>
+    </div>
+  </div>
+</div>
+
+<!-- IN-APP TOAST NOTIFICATION CONTAINER -->
+<div id="toastContainer" aria-live="polite"></div>
+
+<script type="module" src="ui.js"></script>
+</body>
+</html>

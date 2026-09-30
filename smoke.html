@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BITS Pilani Digital — Automated Smoke Test Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bits-navy: #2B296D;
+    --bits-navy-dark: #1E1C4D;
+    --bits-crimson: #E03A3E;
+    --bits-gold: #FDB913;
+    --bg-page: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --border: #E2E8F0;
+    --text-main: #0F172A;
+    --text-muted: #64748B;
+    --success: #15803D;
+    --success-bg: #DCFCE7;
+    --fail: #B91C1C;
+    --fail-bg: #FEE2E2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg-page);
+    color: var(--text-main);
+    padding: 32px 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .smoke-container {
+    max-width: 900px;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06);
+  }
+  header {
+    border-bottom: 2px solid var(--bits-navy);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  h1 { font-size: 20px; font-weight: 800; color: var(--bits-navy); }
+  .badge {
+    background: var(--bits-navy-dark);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .test-section { margin-bottom: 24px; }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bits-navy);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .assert-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    background: #FAFAFA;
+  }
+  .assert-item.pass {
+    border-color: #86EFAC;
+    background: var(--success-bg);
+    color: var(--success);
+  }
+  .assert-item.fail {
+    border-color: #FCA5A5;
+    background: var(--fail-bg);
+    color: var(--fail);
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .summary-pill {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+  }
+  .summary-pill strong { font-size: 18px; display: block; }
+  .summary-pill span { font-size: 11.5px; color: var(--text-muted); }
+  #domAuditList {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #F1F5F9;
+  }
+</style>
+</head>
+<body>
+<div class="smoke-container">
+  <header>
+    <div>
+      <h1>BITS Pilani Digital — End-to-End Smoke Test Suite</h1>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">Validation of sample_marks.xlsx ingestion, course bounds, and static DOM element wiring.</p>
+    </div>
+    <span class="badge" id="overallStatusBadge">Running...</span>
+  </header>
+
+  <div class="test-section">
+    <h2 class="section-title">📊 1. Spreadsheet Ingestion & Validation (sample_marks.xlsx)</h2>
+    <div id="fileAssertions"></div>
+  </div>
+
+  <div class="test-section">
+    <h2 class="section-title">🏛️ 2. Course Partitions & Boundary Marks Verification</h2>
+    <div id="courseAssertions"></div>
+  </div>
+
+  <div class="test-section">
+    <h2 class="section-title">🔍 3. DOM Wiring Integrity (ui.js vs index.html)</h2>
+    <div id="domAssertions"></div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-pill">
+      <strong id="sumTotal">-</strong>
+      <span>Total Tests</span>
+    </div>
+    <div class="summary-pill" style="border-color: #86EFAC;">
+      <strong id="sumPassed" style="color: var(--success);">-</strong>
+      <span>Passed</span>
+    </div>
+    <div class="summary-pill" style="border-color: #FCA5A5;">
+      <strong id="sumFailed" style="color: var(--fail);">-</strong>
+      <span>Failed</span>
+    </div>
+    <div class="summary-pill">
+      <strong id="sumStatus">-</strong>
+      <span>Suite Verdict</span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { parseSpreadsheet } from './io.js';
+import { validateSpreadsheetData } from './grading.js';
+
+let totalTests = 0;
+let passedTests = 0;
+let failedTests = 0;
+
+function report(containerId, message, pass, details = "") {
+  totalTests++;
+  if (pass) passedTests++; else failedTests++;
+  const container = document.getElementById(containerId);
+  const div = document.createElement("div");
+  div.className = `assert-item ${pass ? 'pass' : 'fail'}`;
+  div.innerHTML = `
+    <span><strong>${pass ? '✔ PASS:' : '✖ FAIL:'}</strong> ${message}</span>
+    <span style="font-size: 11px; font-family: monospace;">${details}</span>
+  `;
+  container.appendChild(div);
+}
+
+async function run() {
+  try {
+    // 1. Fetch sample_marks.xlsx
+    const resp = await fetch('sample_marks.xlsx');
+    if (!resp.ok) throw new Error("Could not fetch sample_marks.xlsx");
+    const arrayBuffer = await resp.arrayBuffer();
+
+    const parseResult = parseSpreadsheet(arrayBuffer, window.XLSX);
+    report("fileAssertions", "parseSpreadsheet successfully parsed sample_marks.xlsx", parseResult.success, `success = ${parseResult.success}`);
+    report("fileAssertions", "Contains exactly 180 raw spreadsheet rows", parseResult.rows?.length === 180, `Rows: ${parseResult.rows?.length}`);
+
+    const val = validateSpreadsheetData(parseResult.rows);
+    report("fileAssertions", "Dataset validation reports overall valid status (valid = true)", val.valid === true, `valid = ${val.valid}`);
+    report("fileAssertions", "Spreadsheet has exactly zero data validation errors", val.errors.length === 0, `errors: ${val.errors.length}`);
+    report("fileAssertions", "Spreadsheet yields exactly 180 clean student rows", val.cleanRows.length === 180, `cleanRows: ${val.cleanRows.length}`);
+
+    const courses = [...new Set(val.cleanRows.map(r => r.Course))];
+    report("courseAssertions", "Dataset contains exactly 3 distinct courses", courses.length === 3, `Found: ${courses.length}`);
+
+    const expectedCourseStats = {
+      "CS F211 Data Structures": { count: 60, min: 31, max: 100 },
+      "MATH F111 Mathematics I": { count: 60, min: 25, max: 90 },
+      "ECON F211 Principles of Economics": { count: 60, min: 40, max: 96 }
+    };
+
+    for (const [courseName, expected] of Object.entries(expectedCourseStats)) {
+      const cRows = val.cleanRows.filter(r => r.Course === courseName);
+      report("courseAssertions", `${courseName} student count matches expected (${expected.count})`, cRows.length === expected.count, `Count: ${cRows.length}`);
+
+      const marks = cRows.map(r => Number(r["Total Marks"]));
+      const minMark = Math.min(...marks);
+      const maxMark = Math.max(...marks);
+
+      report("courseAssertions", `${courseName} minimum mark matches data (${expected.min})`, minMark === expected.min, `Min: ${minMark}`);
+      report("courseAssertions", `${courseName} maximum mark matches data (${expected.max})`, maxMark === expected.max, `Max: ${maxMark}`);
+    }
+
+    // 2. Fetch index.html and ui.js for DOM audit
+    const htmlText = await (await fetch('index.html')).text();
+    const uiText = await (await fetch('ui.js')).text();
+
+    const htmlIds = new Set([...htmlText.matchAll(/id=["']([^"']+)["']/g)].map(m => m[1]));
+    const idCalls = [...uiText.matchAll(/getElementById\(["']([^"']+)["']\)/g)].map(m => m[1]);
+    const getElCalls = [...uiText.matchAll(/getEl\(["']([^"']+)["']/g)].map(m => m[1]);
+    const qsCalls = [...uiText.matchAll(/querySelector\(["']#([^"'\s,>+~:]+)["']\)/g)].map(m => m[1]);
+
+    const allStaticIds = [...new Set([...idCalls, ...getElCalls, ...qsCalls])];
+    const missing = allStaticIds.filter(id => !htmlIds.has(id));
+
+    report("domAssertions", `All static DOM IDs in ui.js exist in index.html (Found: ${allStaticIds.length}, Missing: 0)`, missing.length === 0, `Missing: ${missing.length}`);
+
+  } catch (err) {
+    report("fileAssertions", `Execution error: ${err.message}`, false, err.stack);
+  } finally {
+    document.getElementById("sumTotal").innerText = totalTests;
+    document.getElementById("sumPassed").innerText = passedTests;
+    document.getElementById("sumFailed").innerText = failedTests;
+    document.getElementById("sumStatus").innerText = failedTests === 0 ? "PASSED" : "FAILED";
+    document.getElementById("sumStatus").style.color = failedTests === 0 ? "var(--success)" : "var(--fail)";
+
+    const badge = document.getElementById("overallStatusBadge");
+    badge.innerText = failedTests === 0 ? "ALL PASS" : "FAILURES DETECTED";
+    badge.style.background = failedTests === 0 ? "var(--success)" : "var(--fail)";
+  }
+}
+
+run();
+</script>
+</body>
+</html>
