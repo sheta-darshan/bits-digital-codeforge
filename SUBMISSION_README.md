@@ -3,6 +3,8 @@
 **Project:** BITS Pilani Digital — Advanced Grading Console & Cutoff Optimization Engine  
 **Release Version:** v2.0 Enterprise Pro (BITS Branded Edition)  
 **Submission Package:** Stage 1 (Debug), Stage 2 (Reimagine), and Stage 3 (Deploy)  
+**Live URL (GitHub Pages):** https://sheta-darshan.github.io/bits-digital-codeforge/  
+**GitHub Repository:** https://github.com/sheta-darshan/bits-digital-codeforge  
 
 ---
 

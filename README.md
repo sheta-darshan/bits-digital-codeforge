@@ -1,6 +1,7 @@
 # BITS Pilani Digital — Advanced Grading Console
 
-Live URL: <add after deploy>
+Live URL: https://sheta-darshan.github.io/bits-digital-codeforge/  
+GitHub Repository: https://github.com/sheta-darshan/bits-digital-codeforge
 
 > **Enhancement Highlights**: Architected a modular zero-build ES system with authentic BITS Pilani Digital branding, intelligent real-time borderline student detection, configurable distribution guardrails, interactive canvas histogram with draggable cutoff markers, and formal Senate Academic Council print audit reports. Hardened against CWE-1236 CSV injection and DOM XSS, with automated test suites verifying strict monotonic invariants and edge cases.
 
