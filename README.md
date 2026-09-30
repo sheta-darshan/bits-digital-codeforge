@@ -49,6 +49,7 @@ The codebase is organized into focused, single-responsibility ES modules with **
 | [`tests.html`](tests.html) | HTML / UI | In-browser visual test runner with real-time pass/fail metrics |
 | [`smoke.test.js`](smoke.test.js) | Node / CLI | Automated smoke test validating `sample_marks.xlsx` (180 rows, 3 courses) and DOM element wiring (`npm run smoke`) with 22 assertions |
 | [`smoke.html`](smoke.html) | HTML / UI | In-browser automated smoke test runner with visual badge output |
+| [`BUG_FIX_LOG.pdf`](BUG_FIX_LOG.pdf) | PDF Document | Official Stage 1 Bug Fix Log formatted per BITS Digital CodeForge rubric specification |
 
 ---
 

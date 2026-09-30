@@ -47,6 +47,7 @@ Starting from an intentionally flawed prototype (`BITS_Digital_CodeForge_Challen
 | [`sample_marks.xlsx`](sample_marks.xlsx) | Realistic test marks sheet containing 180 student records across 3 BITS Pilani courses (`CS F211`, `MATH F111`, `ECON F211`). |
 | [`BITS_Digital_CodeForge_Challenge.html`](BITS_Digital_CodeForge_Challenge.html) | **Original Starting Prototype** preserved verbatim as the pre-refactor benchmark. |
 | [`BUG_FIX_LOG.md`](BUG_FIX_LOG.md) | Official Stage 1 submission table detailing bug identification, reproduction, root cause analysis, fixes, and verification. |
+| [`BUG_FIX_LOG.pdf`](BUG_FIX_LOG.pdf) | **Official Stage 1 Bug Fix Log PDF Document** formatted per BITS Digital CodeForge rubric specification. |
 | [`SUBMISSION_README.md`](SUBMISSION_README.md) | Comprehensive documentation, architecture breakdown, design tokens, and deployment runbook. |
 
 ---
